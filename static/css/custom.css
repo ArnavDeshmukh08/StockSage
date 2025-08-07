@@ -1,0 +1,246 @@
+/* Custom styles for Stock Trading Assistant */
+
+/* Ensure proper spacing and responsive design */
+.container {
+    max-width: 1200px;
+}
+
+/* Stock search dropdown styling */
+#searchDropdown {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
+#searchDropdown .dropdown-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+
+#searchDropdown .dropdown-item:last-child {
+    border-bottom: none;
+}
+
+#searchDropdown .dropdown-item:hover {
+    background-color: var(--bs-secondary-bg);
+}
+
+#searchDropdown .dropdown-item.active {
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+}
+
+/* Signal badge customization */
+.badge-sm {
+    font-size: 0.7em;
+    padding: 0.25em 0.5em;
+}
+
+/* Progress bar enhancements */
+.progress {
+    height: 8px;
+    background-color: var(--bs-secondary-bg);
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+/* Card enhancements */
+.card {
+    border: 1px solid var(--bs-border-color);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background-color: var(--bs-secondary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* Table enhancements */
+.table-hover tbody tr:hover {
+    background-color: var(--bs-secondary-bg);
+}
+
+/* Chart container */
+.chart-container {
+    position: relative;
+    height: 400px;
+    margin: 1rem 0;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--bs-secondary);
+    border-radius: 50%;
+    border-top-color: var(--bs-primary);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .card-body {
+        padding: 1rem 0.75rem;
+    }
+    
+    #searchDropdown {
+        max-height: 200px;
+    }
+}
+
+/* Dark theme specific adjustments */
+[data-bs-theme="dark"] .bg-light {
+    background-color: var(--bs-dark) !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: var(--bs-light) !important;
+}
+
+/* Signal color variations */
+.text-buy {
+    color: var(--bs-success) !important;
+}
+
+.text-sell {
+    color: var(--bs-danger) !important;
+}
+
+.text-hold {
+    color: var(--bs-warning) !important;
+}
+
+/* Custom input styling */
+.form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Button enhancements */
+.btn {
+    transition: all 0.15s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+}
+
+/* Feather icons alignment */
+[data-feather] {
+    vertical-align: -0.125em;
+}
+
+/* Stock price styling */
+.stock-price {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.price-change-positive {
+    color: var(--bs-success);
+}
+
+.price-change-negative {
+    color: var(--bs-danger);
+}
+
+/* Indicator value styling */
+.indicator-value {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+/* Alert customization */
+.alert {
+    border: none;
+    border-radius: var(--bs-border-radius-lg);
+}
+
+/* Modal enhancements */
+.modal-content {
+    border: none;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+/* Footer styling */
+footer {
+    margin-top: auto;
+}
+
+/* List group enhancements */
+.list-group-item {
+    border-color: var(--bs-border-color);
+    background-color: transparent;
+}
+
+.list-group-item:hover {
+    background-color: var(--bs-secondary-bg);
+}
+
+/* Navigation enhancements */
+.navbar-brand {
+    font-weight: 600;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+/* Search result styling */
+.search-result-symbol {
+    font-weight: 600;
+    color: var(--bs-primary);
+}
+
+.search-result-name {
+    color: var(--bs-body-color);
+    opacity: 0.8;
+}
+
+.search-result-exchange {
+    font-size: 0.8em;
+    opacity: 0.6;
+}
+
+/* Chart legend styling */
+.chartjs-legend {
+    margin-bottom: 1rem;
+}
+
+/* Error state styling */
+.error-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--bs-text-muted);
+}
+
+.error-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}

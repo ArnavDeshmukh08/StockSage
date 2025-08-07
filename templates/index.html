@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Stock Trading Assistant{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container text-center">
+        <h1 class="hero-title">Advanced Stock Analysis Platform</h1>
+        <p class="hero-subtitle">Real-time NSE/BSE data with comprehensive technical analysis and trading signals</p>
+        
+        <!-- Enhanced Search Section -->
+        <div class="search-container">
+            <div class="position-relative">
+                <input type="text" 
+                       id="stockSearch" 
+                       class="form-control search-input" 
+                       placeholder="Search stocks (e.g., RELIANCE, TCS, HINDUNILVR)..."
+                       autocomplete="off">
+                <div id="searchDropdown" class="search-dropdown" style="display: none;">
+                    <!-- Search results will be populated here -->
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="button" class="btn btn-light btn-lg px-4 py-3" onclick="analyzeSelectedStock()" id="analyzeBtn" disabled>
+                    <i data-feather="bar-chart-2" class="me-2"></i>
+                    Analyze Stock
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+<div class="row">
+    <!-- Quick Stats Section -->
+    <div class="col-lg-8 mb-4">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="stat-card">
+                    <div class="stat-number">{{ recent_analyses|length }}</div>
+                    <div class="stat-label">Stocks Analyzed</div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card">
+                    <div class="stat-number">{{ watchlist|length }}</div>
+                    <div class="stat-label">In Watchlist</div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card">
+                    <div class="stat-number">15+</div>
+                    <div class="stat-label">Technical Indicators</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Watchlist Section -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i data-feather="bookmark" class="me-2"></i>
+                    Watchlist
+                </h5>
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addWatchlistModal">
+                    <i data-feather="plus" class="me-1"></i>Add
+                </button>
+            </div>
+            <div class="card-body">
+                {% if watchlist %}
+                    <div class="list-group list-group-flush">
+                        {% for item in watchlist %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ item.symbol }}</strong>
+                                <small class="text-muted d-block">{{ item.exchange }}</small>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('analyze_stock', symbol=item.symbol) }}" 
+                                   class="btn btn-sm btn-outline-primary me-1">
+                                    <i data-feather="bar-chart-2"></i>
+                                </a>
+                                <a href="{{ url_for('remove_from_watchlist', item_id=item.id) }}" 
+                                   class="btn btn-sm btn-outline-danger">
+                                    <i data-feather="x"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">
+                        <i data-feather="inbox" class="d-block mb-2"></i>
+                        No stocks in watchlist
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Market Overview Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="trending-up" class="me-2"></i>
+                    Market Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6>NSE Index (NIFTY 50)</h6>
+                        <div id="nifty-tradingview-widget" style="height: 300px;"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <h6>BSE Index (SENSEX)</h6>
+                        <div id="sensex-tradingview-widget" style="height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Analysis Section -->
+{% if recent_analyses %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="clock" class="me-2"></i>
+                    Recent Analysis
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Exchange</th>
+                                <th>Price (₹)</th>
+                                <th>Signal</th>
+                                <th>Confidence</th>
+                                <th>Time</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for analysis in recent_analyses %}
+                            <tr>
+                                <td><strong>{{ analysis.symbol }}</strong></td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ analysis.exchange }}</span>
+                                </td>
+                                <td>₹{{ "%.2f"|format(analysis.price) }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if analysis.signal == 'BUY' %}bg-success
+                                        {% elif analysis.signal == 'SELL' %}bg-danger
+                                        {% elif analysis.signal in ['WEAK_BUY', 'WEAK_SELL'] %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ analysis.signal }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 60px; height: 8px;">
+                                            <div class="progress-bar" style="width: {{ analysis.confidence }}%"></div>
+                                        </div>
+                                        <small>{{ "%.0f"|format(analysis.confidence) }}%</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ analysis.timestamp.strftime('%H:%M %d/%m') }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('analyze_stock', symbol=analysis.symbol) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Add to Watchlist Modal -->
+<div class="modal fade" id="addWatchlistModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add to Watchlist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('add_to_watchlist') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="watchlistSymbol" class="form-label">Stock Symbol</label>
+                        <div class="position-relative">
+                            <input type="text" class="form-control" id="watchlistSymbol" name="symbol" 
+                                   placeholder="Type stock name or symbol (e.g., RELIANCE, HINDU...)" 
+                                   autocomplete="off" required>
+                            <div id="watchlistSearchDropdown" class="dropdown-menu w-100" style="display: none;">
+                                <!-- Search results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="watchlistExchange" class="form-label">Exchange</label>
+                        <select class="form-select" id="watchlistExchange" name="exchange">
+                            <option value="NSE">NSE</option>
+                            <option value="BSE">BSE</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add to Watchlist</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- TradingView Widget Script -->
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+
+<script>
+    // Initialize stock search functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeStockSearch();
+        initializeMarketOverviewCharts();
+    });
+    
+    function initializeMarketOverviewCharts() {
+        // Initialize NIFTY 50 chart
+        try {
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": "NSE:NIFTY",
+                "interval": "D",
+                "timezone": "Asia/Kolkata",
+                "theme": "light",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#ffffff",
+                "enable_publishing": false,
+                "allow_symbol_change": false,
+                "calendar": false,
+                "hide_side_toolbar": true,
+                "hide_top_toolbar": false,
+                "hide_legend": true,
+                "save_image": false,
+                "container_id": "nifty-tradingview-widget"
+            });
+        } catch (error) {
+            console.error('Error loading NIFTY chart:', error);
+        }
+        
+        // Initialize SENSEX chart
+        try {
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": "BSE:SENSEX",
+                "interval": "D",
+                "timezone": "Asia/Kolkata",
+                "theme": "light",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#ffffff",
+                "enable_publishing": false,
+                "allow_symbol_change": false,
+                "calendar": false,
+                "hide_side_toolbar": true,
+                "hide_top_toolbar": false,
+                "hide_legend": true,
+                "save_image": false,
+                "container_id": "sensex-tradingview-widget"
+            });
+        } catch (error) {
+            console.error('Error loading SENSEX chart:', error);
+        }
+    }
+</script>
+{% endblock %}

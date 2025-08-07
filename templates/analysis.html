@@ -1,0 +1,832 @@
+{% extends "base.html" %}
+
+{% block title %}{{ symbol }} Analysis - Stock Trading Assistant{% endblock %}
+
+{% block content %}
+<!-- Stock Header -->
+<div class="analysis-card">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center mb-3">
+                <div class="me-4">
+                    <h1 class="mb-1" style="color: var(--primary-color); font-weight: 700;">{{ symbol }}</h1>
+                    <span class="badge badge-primary">{{ exchange }}</span>
+                    <small class="text-muted ms-2">Last Updated: {{ analysis.timestamp.strftime('%H:%M:%S %d/%m/%Y') }}</small>
+                </div>
+                <div class="ms-auto text-end">
+                    <div class="stat-number">₹{{ "%.2f"|format(analysis.price) }}</div>
+                    <div class="stat-label">Current Price</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <div class="signal-section">
+                <div class="mb-2">
+                    {% if signal_result.signal == 'BUY' %}
+                        <span class="badge badge-success fs-5 px-4 py-2">{{ signal_result.signal }}</span>
+                    {% elif signal_result.signal == 'SELL' %}
+                        <span class="badge badge-danger fs-5 px-4 py-2">{{ signal_result.signal }}</span>
+                    {% else %}
+                        <span class="badge badge-warning fs-5 px-4 py-2">{{ signal_result.signal }}</span>
+                    {% endif %}
+                </div>
+                <div class="indicator-value">{{ "%.1f"|format(signal_result.confidence) }}% Confidence</div>
+                <div class="progress mt-2" style="height: 8px; border-radius: 50px;">
+                    <div class="progress-bar" style="width: {{ signal_result.confidence }}%; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if signal_result.explanation %}
+    <div class="mt-4 p-3" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; border-left: 4px solid var(--primary-color);">
+        <h6 style="color: var(--primary-color); font-weight: 600; margin-bottom: 0.5rem;">
+            <i data-feather="info" class="me-2"></i>Analysis Summary
+        </h6>
+        <div style="color: var(--text-primary);">{{ signal_result.explanation|safe }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Signal Analysis -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="zap" class="me-2"></i>
+                    Signal Analysis
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6>Recommendation: 
+                            <span class="badge 
+                                {% if signal_result.signal == 'BUY' %}bg-success
+                                {% elif signal_result.signal == 'SELL' %}bg-danger
+                                {% elif signal_result.signal in ['WEAK_BUY', 'WEAK_SELL'] %}bg-warning
+                                {% else %}bg-secondary{% endif %}">
+                                {{ signal_result.signal }}
+                            </span>
+                        </h6>
+                        <p class="text-muted">{{ signal_result.explanation }}</p>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <small class="text-muted">Confidence Level</small>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar" style="width: {{ signal_result.confidence }}%">
+                                        {{ "%.0f"|format(signal_result.confidence) }}%
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <small class="text-muted">Risk Level</small>
+                                <div>
+                                    <span class="badge 
+                                        {% if signal_result.risk_level == 'LOW' %}bg-success
+                                        {% elif signal_result.risk_level == 'MEDIUM' %}bg-warning
+                                        {% elif signal_result.risk_level == 'HIGH' %}bg-danger
+                                        {% else %}bg-dark{% endif %}">
+                                        {{ signal_result.risk_level }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Individual Signals</h6>
+                        {% for indicator, signal in signal_result.individual_signals.items() %}
+                            {% if signal %}
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small>{{ indicator }}</small>
+                                <span class="badge 
+                                    {% if signal == 'BUY' %}bg-success
+                                    {% elif signal == 'SELL' %}bg-danger
+                                    {% elif signal in ['WEAK_BUY', 'WEAK_SELL'] %}bg-warning
+                                    {% else %}bg-secondary{% endif %} badge-sm">
+                                    {{ signal }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Technical Indicators -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i data-feather="trending-up" class="me-2"></i>
+                    Momentum Indicators
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if indicators.RSI %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span>RSI (14)</span>
+                        <strong>{{ "%.2f"|format(indicators.RSI.current) if indicators.RSI.current else 'N/A' }}</strong>
+                    </div>
+                    {% if indicators.RSI.current %}
+                    <div class="progress">
+                        <div class="progress-bar 
+                            {% if indicators.RSI.current < 30 %}bg-success
+                            {% elif indicators.RSI.current > 70 %}bg-danger
+                            {% else %}bg-warning{% endif %}" 
+                             style="width: {{ indicators.RSI.current }}%">
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        {% if indicators.RSI.oversold %}Oversold
+                        {% elif indicators.RSI.overbought %}Overbought
+                        {% else %}Neutral{% endif %}
+                    </small>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if indicators.MACD %}
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">MACD</small>
+                            <div><strong>{{ "%.4f"|format(indicators.MACD.macd) if indicators.MACD.macd else 'N/A' }}</strong></div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Signal</small>
+                            <div><strong>{{ "%.4f"|format(indicators.MACD.signal) if indicators.MACD.signal else 'N/A' }}</strong></div>
+                        </div>
+                    </div>
+                    <div class="mt-1">
+                        <small class="text-muted">Histogram: </small>
+                        <span class="{% if indicators.MACD.histogram and indicators.MACD.histogram > 0 %}text-success{% elif indicators.MACD.histogram and indicators.MACD.histogram < 0 %}text-danger{% endif %}">
+                            {{ "%.4f"|format(indicators.MACD.histogram) if indicators.MACD.histogram else 'N/A' }}
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i data-feather="activity" class="me-2"></i>
+                    Moving Averages
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if indicators.EMA %}
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">EMA 9</small>
+                            <div><strong>₹{{ "%.2f"|format(indicators.EMA.ema_9) if indicators.EMA.ema_9 else 'N/A' }}</strong></div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">EMA 21</small>
+                            <div><strong>₹{{ "%.2f"|format(indicators.EMA.ema_21) if indicators.EMA.ema_21 else 'N/A' }}</strong></div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if indicators.SMA %}
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">SMA 50</small>
+                            <div><strong>₹{{ "%.2f"|format(indicators.SMA.sma_50) if indicators.SMA.sma_50 else 'N/A' }}</strong></div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">SMA 200</small>
+                            <div><strong>₹{{ "%.2f"|format(indicators.SMA.sma_200) if indicators.SMA.sma_200 else 'N/A' }}</strong></div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bollinger Bands & Volume -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i data-feather="layers" class="me-2"></i>
+                    Bollinger Bands
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if indicators.Bollinger %}
+                <div class="row">
+                    <div class="col-4">
+                        <small class="text-muted">Upper</small>
+                        <div><strong>₹{{ "%.2f"|format(indicators.Bollinger.upper) if indicators.Bollinger.upper else 'N/A' }}</strong></div>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted">Middle</small>
+                        <div><strong>₹{{ "%.2f"|format(indicators.Bollinger.middle) if indicators.Bollinger.middle else 'N/A' }}</strong></div>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted">Lower</small>
+                        <div><strong>₹{{ "%.2f"|format(indicators.Bollinger.lower) if indicators.Bollinger.lower else 'N/A' }}</strong></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i data-feather="bar-chart" class="me-2"></i>
+                    Volume Analysis
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if indicators.Volume %}
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">Current Volume</small>
+                        <div><strong>{{ "{:,}".format(indicators.Volume.current|int) if indicators.Volume.current else 'N/A' }}</strong></div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Avg Volume</small>
+                        <div><strong>{{ "{:,}".format(indicators.Volume.average|int) if indicators.Volume.average else 'N/A' }}</strong></div>
+                    </div>
+                </div>
+                {% if indicators.Volume.volume_ratio %}
+                <div class="mt-2">
+                    <small class="text-muted">Volume Ratio: </small>
+                    <span class="{% if indicators.Volume.volume_ratio > 1.5 %}text-success{% elif indicators.Volume.volume_ratio > 1.2 %}text-warning{% endif %}">
+                        {{ "%.2f"|format(indicators.Volume.volume_ratio) }}x
+                    </span>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Technical Indicators -->
+<div class="row mb-4">
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i data-feather="target" class="me-2"></i>
+                    Stochastic RSI
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if indicators.StochRSI %}
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <small class="text-muted">%K</small>
+                        <div><strong>{{ "%.2f"|format(indicators.StochRSI.stoch_k * 100) if indicators.StochRSI.stoch_k else 'N/A' }}%</strong></div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">%D</small>
+                        <div><strong>{{ "%.2f"|format(indicators.StochRSI.stoch_d * 100) if indicators.StochRSI.stoch_d else 'N/A' }}%</strong></div>
+                    </div>
+                </div>
+                {% if indicators.StochRSI.stoch_k %}
+                <div class="mt-2">
+                    {% if indicators.StochRSI.oversold %}
+                        <span class="badge bg-success">Oversold</span>
+                    {% elif indicators.StochRSI.overbought %}
+                        <span class="badge bg-danger">Overbought</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Neutral</span>
+                    {% endif %}
+                    
+                    {% if indicators.StochRSI.bullish_crossover %}
+                        <span class="badge bg-success ms-1">Bullish Crossover</span>
+                    {% elif indicators.StochRSI.bearish_crossover %}
+                        <span class="badge bg-danger ms-1">Bearish Crossover</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i data-feather="zap" class="me-2"></i>
+                    Awesome Oscillator
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if indicators.AwesomeOscillator %}
+                <div class="mb-2">
+                    <small class="text-muted">Current Value</small>
+                    <div>
+                        <strong class="{% if indicators.AwesomeOscillator.current > 0 %}text-success{% elif indicators.AwesomeOscillator.current < 0 %}text-danger{% endif %}">
+                            {{ "%.4f"|format(indicators.AwesomeOscillator.current) if indicators.AwesomeOscillator.current else 'N/A' }}
+                        </strong>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    {% if indicators.AwesomeOscillator.bullish %}
+                        <span class="badge bg-success">Bullish</span>
+                    {% elif indicators.AwesomeOscillator.bearish %}
+                        <span class="badge bg-danger">Bearish</span>
+                    {% endif %}
+                    
+                    {% if indicators.AwesomeOscillator.increasing %}
+                        <span class="badge bg-info ms-1">Increasing</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i data-feather="dollar-sign" class="me-2"></i>
+                    Money Flow Index
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if indicators.MFI %}
+                <div class="mb-2">
+                    <small class="text-muted">MFI (14)</small>
+                    <div><strong>{{ "%.2f"|format(indicators.MFI.current) if indicators.MFI.current else 'N/A' }}</strong></div>
+                </div>
+                {% if indicators.MFI.current %}
+                <div class="progress mb-2">
+                    <div class="progress-bar 
+                        {% if indicators.MFI.current < 20 %}bg-success
+                        {% elif indicators.MFI.current > 80 %}bg-danger
+                        {% else %}bg-warning{% endif %}" 
+                         style="width: {{ indicators.MFI.current }}%">
+                    </div>
+                </div>
+                <div class="mt-2">
+                    {% if indicators.MFI.oversold %}
+                        <span class="badge bg-success">Oversold</span>
+                    {% elif indicators.MFI.overbought %}
+                        <span class="badge bg-danger">Overbought</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Neutral</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Price Charts -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i data-feather="trending-up" class="me-2"></i>
+                    Advanced Price Charts
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary active" id="tradingViewBtn">
+                            TradingView Chart
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="customChartBtn">
+                            Technical Analysis Chart
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-success" id="fullscreenBtn" title="Expand Chart">
+                        <i data-feather="maximize-2"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- TradingView Chart -->
+                <div id="tradingViewChart" style="height: 500px;">
+                    <div id="tradingview_chart" style="height: 100%; width: 100%;"></div>
+                </div>
+                
+                <!-- Custom Chart -->
+                <div id="customChart" style="height: 500px; display: none;">
+                    <canvas id="priceChart" style="height: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Chart Modal -->
+<div id="fullscreenModal" class="fullscreen-modal" style="display: none;">
+    <div class="fullscreen-modal-content">
+        <div class="fullscreen-modal-header">
+            <h4 class="mb-0">{{ symbol }} - Advanced Chart Analysis</h4>
+            <div class="d-flex align-items-center gap-2">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="fullscreenTradingViewBtn">
+                        TradingView Chart
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="fullscreenCustomChartBtn">
+                        Technical Analysis Chart
+                    </button>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="closeFullscreenBtn" title="Close Fullscreen">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+        </div>
+        <div class="fullscreen-modal-body">
+            <!-- TradingView Chart Fullscreen -->
+            <div id="fullscreenTradingViewChart" style="height: 100%;">
+                <div id="tradingview_chart_fullscreen" style="height: 100%; width: 100%;"></div>
+            </div>
+            
+            <!-- Custom Chart Fullscreen -->
+            <div id="fullscreenCustomChart" style="height: 100%; display: none;">
+                <canvas id="priceChartFullscreen" style="height: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary me-2">
+            <i data-feather="arrow-left" class="me-1"></i>
+            Back to Dashboard
+        </a>
+        <button class="btn btn-primary" onclick="window.location.reload()">
+            <i data-feather="refresh-cw" class="me-1"></i>
+            Refresh Analysis
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- TradingView Widget Script -->
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+
+<script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+<script>
+    // Initialize chart with data
+    const chartData = {{ chart_data|tojson }};
+    const symbol = "{{ symbol }}";
+    const cleanSymbol = "{{ symbol.replace('.NS', '').replace('.BO', '') }}";
+    
+    // Determine the correct TradingView symbol format
+    let tradingViewSymbol;
+    if ("{{ symbol }}".includes('.NS')) {
+        tradingViewSymbol = `NSE:${cleanSymbol}`;
+    } else if ("{{ symbol }}".includes('.BO')) {
+        tradingViewSymbol = `BSE:${cleanSymbol}`;
+    } else {
+        tradingViewSymbol = `NSE:${cleanSymbol}`;  // Default to NSE
+    }
+    
+    console.log('Stock symbol:', symbol);
+    console.log('Clean symbol:', cleanSymbol);
+    console.log('TradingView symbol:', tradingViewSymbol);
+    
+    let tradingViewWidget = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize TradingView chart by default
+        initializeTradingViewChart();
+        
+        // Initialize custom chart data but don't display yet
+        if (chartData && chartData.dates && chartData.dates.length > 0) {
+            // Custom chart will be initialized when button is clicked
+            console.log('Chart data loaded for custom chart');
+        } else {
+            console.warn('No chart data available for custom chart');
+        }
+        
+        // Chart toggle functionality
+        document.getElementById('tradingViewBtn').addEventListener('click', function() {
+            showTradingViewChart();
+        });
+        
+        document.getElementById('customChartBtn').addEventListener('click', function() {
+            showCustomChart();
+        });
+        
+        // Fullscreen functionality
+        document.getElementById('fullscreenBtn').addEventListener('click', function() {
+            openFullscreenChart();
+        });
+        
+        document.getElementById('closeFullscreenBtn').addEventListener('click', function() {
+            closeFullscreenChart();
+        });
+        
+        document.getElementById('fullscreenTradingViewBtn').addEventListener('click', function() {
+            showFullscreenTradingView();
+        });
+        
+        document.getElementById('fullscreenCustomChartBtn').addEventListener('click', function() {
+            showFullscreenCustomChart();
+        });
+        
+        // Close fullscreen on ESC key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeFullscreenChart();
+            }
+        });
+    });
+    
+    function initializeTradingViewChart() {
+        try {
+            if (typeof TradingView !== 'undefined') {
+                tradingViewWidget = new TradingView.widget({
+                    "autosize": true,
+                    "symbol": tradingViewSymbol,
+                    "interval": "D",
+                    "timezone": "Asia/Kolkata",
+                    "theme": "light",
+                    "style": "1",
+                    "locale": "en",
+                    "toolbar_bg": "#ffffff",
+                    "enable_publishing": false,
+                    "allow_symbol_change": true,
+                    "calendar": false,
+                    "hide_side_toolbar": false,
+                    "studies": [
+                        "RSI@tv-basicstudies",
+                        "MACD@tv-basicstudies",
+                        "BB@tv-basicstudies",
+                        "EMA@tv-basicstudies"
+                    ],
+                    "container_id": "tradingview_chart"
+                });
+            } else {
+                console.error('TradingView library not loaded');
+                // Fallback to custom chart
+                showCustomChart();
+            }
+        } catch (error) {
+            console.error('Error initializing TradingView chart:', error);
+            // Fallback to custom chart
+            showCustomChart();
+        }
+    }
+    
+    function showTradingViewChart() {
+        document.getElementById('tradingViewChart').style.display = 'block';
+        document.getElementById('customChart').style.display = 'none';
+        
+        // Update button states
+        const tvBtn = document.getElementById('tradingViewBtn');
+        const customBtn = document.getElementById('customChartBtn');
+        
+        tvBtn.classList.remove('btn-outline-primary');
+        tvBtn.classList.add('btn-primary', 'active');
+        customBtn.classList.remove('btn-primary', 'active');
+        customBtn.classList.add('btn-outline-secondary');
+        
+        // Reinitialize TradingView if needed
+        if (!tradingViewWidget) {
+            setTimeout(initializeTradingViewChart, 100);
+        }
+    }
+    
+    function showCustomChart() {
+        document.getElementById('tradingViewChart').style.display = 'none';
+        document.getElementById('customChart').style.display = 'block';
+        
+        // Update button states
+        const tvBtn = document.getElementById('tradingViewBtn');
+        const customBtn = document.getElementById('customChartBtn');
+        
+        customBtn.classList.remove('btn-outline-secondary');
+        customBtn.classList.add('btn-primary', 'active');
+        tvBtn.classList.remove('btn-primary', 'active');
+        tvBtn.classList.add('btn-outline-primary');
+        
+        // Initialize custom chart if data is available
+        if (chartData && chartData.dates && chartData.dates.length > 0) {
+            try {
+                initializePriceChart(chartData, symbol);
+                
+                // Resize custom chart when shown
+                if (window.ChartManager && window.ChartManager.resizeChart && window.priceChart) {
+                    setTimeout(() => {
+                        window.ChartManager.resizeChart(window.priceChart);
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error initializing custom chart:', error);
+                document.getElementById('customChart').innerHTML = `
+                    <div class="text-center py-5">
+                        <i data-feather="alert-circle" class="text-muted" style="width: 48px; height: 48px;"></i>
+                        <p class="text-muted mt-3">Chart data not available</p>
+                    </div>
+                `;
+                feather.replace();
+            }
+        } else {
+            document.getElementById('customChart').innerHTML = `
+                <div class="text-center py-5">
+                    <i data-feather="bar-chart-2" class="text-muted" style="width: 48px; height: 48px;"></i>
+                    <p class="text-muted mt-3">Loading chart data...</p>
+                </div>
+            `;
+            feather.replace();
+        }
+    }
+    
+    let fullscreenTradingViewWidget = null;
+    let fullscreenCustomChart = null;
+    
+    function openFullscreenChart() {
+        const modal = document.getElementById('fullscreenModal');
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Initialize fullscreen TradingView chart by default
+        setTimeout(() => {
+            initializeFullscreenTradingView();
+            showFullscreenTradingView();
+        }, 100);
+    }
+    
+    function closeFullscreenChart() {
+        const modal = document.getElementById('fullscreenModal');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        
+        // Clean up fullscreen charts
+        if (fullscreenTradingViewWidget) {
+            try {
+                fullscreenTradingViewWidget.remove();
+                fullscreenTradingViewWidget = null;
+            } catch (e) {
+                console.log('Error removing fullscreen TradingView widget');
+            }
+        }
+    }
+    
+    function initializeFullscreenTradingView() {
+        try {
+            if (typeof TradingView !== 'undefined') {
+                fullscreenTradingViewWidget = new TradingView.widget({
+                    "autosize": true,
+                    "symbol": tradingViewSymbol,
+                    "interval": "D",
+                    "timezone": "Asia/Kolkata",
+                    "theme": "light",
+                    "style": "1",
+                    "locale": "en",
+                    "toolbar_bg": "#ffffff",
+                    "enable_publishing": false,
+                    "allow_symbol_change": true,
+                    "calendar": false,
+                    "hide_side_toolbar": false,
+                    "studies": [
+                        "RSI@tv-basicstudies",
+                        "MACD@tv-basicstudies",
+                        "BB@tv-basicstudies",
+                        "EMA@tv-basicstudies"
+                    ],
+                    "container_id": "tradingview_chart_fullscreen"
+                });
+            }
+        } catch (error) {
+            console.error('Error initializing fullscreen TradingView chart:', error);
+        }
+    }
+    
+    function showFullscreenTradingView() {
+        document.getElementById('fullscreenTradingViewChart').style.display = 'block';
+        document.getElementById('fullscreenCustomChart').style.display = 'none';
+        
+        // Update button states
+        const tvBtn = document.getElementById('fullscreenTradingViewBtn');
+        const customBtn = document.getElementById('fullscreenCustomChartBtn');
+        
+        tvBtn.classList.remove('btn-outline-primary');
+        tvBtn.classList.add('btn-primary', 'active');
+        customBtn.classList.remove('btn-primary', 'active');
+        customBtn.classList.add('btn-outline-secondary');
+        
+        if (!fullscreenTradingViewWidget) {
+            setTimeout(initializeFullscreenTradingView, 100);
+        }
+    }
+    
+    function showFullscreenCustomChart() {
+        document.getElementById('fullscreenTradingViewChart').style.display = 'none';
+        document.getElementById('fullscreenCustomChart').style.display = 'block';
+        
+        // Update button states
+        const tvBtn = document.getElementById('fullscreenTradingViewBtn');
+        const customBtn = document.getElementById('fullscreenCustomChartBtn');
+        
+        customBtn.classList.remove('btn-outline-secondary');
+        customBtn.classList.add('btn-primary', 'active');
+        tvBtn.classList.remove('btn-primary', 'active');
+        tvBtn.classList.add('btn-outline-primary');
+        
+        // Initialize fullscreen custom chart
+        if (chartData && chartData.dates && chartData.dates.length > 0) {
+            try {
+                // Initialize custom chart in fullscreen canvas
+                const canvas = document.getElementById('priceChartFullscreen');
+                const ctx = canvas.getContext('2d');
+                
+                // Destroy existing chart if any
+                if (fullscreenCustomChart) {
+                    fullscreenCustomChart.destroy();
+                }
+                
+                // Create new fullscreen chart with same data
+                fullscreenCustomChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.dates,
+                        datasets: [{
+                            label: 'Close Price',
+                            data: chartData.prices.close,
+                            borderColor: 'rgb(99, 102, 241)',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `${symbol} - Price Chart`,
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: 'Price (₹)'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error initializing fullscreen custom chart:', error);
+                document.getElementById('fullscreenCustomChart').innerHTML = `
+                    <div class="text-center py-5">
+                        <i data-feather="alert-circle" class="text-muted" style="width: 48px; height: 48px;"></i>
+                        <p class="text-muted mt-3">Chart data not available</p>
+                    </div>
+                `;
+                feather.replace();
+            }
+        }
+    }
+</script>
+{% endblock %}

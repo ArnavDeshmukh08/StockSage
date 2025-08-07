@@ -1,0 +1,68 @@
+Generate a full Python-based stock trading assistant software that runs locally on a computer and uses technical analysis to generate buy/sell/hold signals. The project should include a clean backend system and an interactive front-end (either CLI or web dashboard using Streamlit). It should fetch stock price data in real-time or from historical sources and then process it using standard TA indicators.
+
+### Core Features:
+1. **Stock Data Fetching**
+   - Use `yfinance` or another free stock API to fetch historical and real-time OHLCV data.
+   - Allow user to input the stock symbol (e.g., "RELIANCE.NS") and select time interval (e.g., 15m, 1h, 1d).
+
+2. **Technical Indicator Engine**
+   - Use `pandas-ta` (preferred) or `ta` or `btalib` to compute:
+     - RSI
+     - MACD
+     - EMA (9, 21)
+     - SMA (50, 200)
+     - Bollinger Bands
+   - Apply standard logic to generate signals:
+     - RSI below 30 = Buy signal, above 70 = Sell signal
+     - EMA 9 crosses above EMA 21 = Buy; crosses below = Sell
+     - Bollinger Band bounce = Reverse signal
+     - MACD crossover = Trend signal
+   - Combine these into a final signal recommendation: Buy, Sell, or Hold.
+
+3. **Signal Aggregator**
+   - Show confidence score based on number of indicators that agree.
+   - Optionally log previous signals and prices into a `.csv` file or local SQLite database.
+
+4. **Front-End UI**
+   Choose one of these two (or both if possible):
+   - **Option A: CLI Menu (Console App)**
+     - Simple text-based menu for user input and output.
+     - Example: "Enter stock symbol" → fetch data → display indicators and signal.
+   - **Option B: Web App using Streamlit**
+     - Interactive dashboard showing:
+       - Price chart (candlesticks) using `plotly` or `mplfinance`
+       - Indicator overlays (like RSI, MACD)
+       - Signal output and confidence meter
+       - Button to refresh data and update signals
+
+5. **Chart Viewer**
+   - Plot stock chart with overlays (EMA, Bollinger Bands, etc.)
+   - Add arrows or markers for Buy/Sell points using `matplotlib` or `plotly`.
+
+6. **Modular Architecture**
+   - Use clean folder structure:
+     - `/core` → TA logic
+     - `/data` → stock data fetching
+     - `/ui` → streamlit/dashboard or CLI
+     - `/utils` → config, logging
+   - Make each module testable and well-commented.
+
+7. **Extras (Optional but Ideal)**
+   - Add Telegram or WhatsApp alerts using APIs/webhooks.
+   - Add support for scheduling (like running every hour with `schedule` or `cron`).
+   - Export signals to `.csv` or `.json`.
+
+### Tech Stack:
+- Language: Python 3.9+
+- Libraries:
+  - `yfinance`, `pandas`, `pandas-ta`, `numpy`, `plotly`, `streamlit` or `typer` for CLI
+  - `matplotlib` or `mplfinance` for visual charting
+  - `schedule` (for task scheduling)
+  - `dotenv` (for API keys and configs)
+
+### Final Output:
+The generator should return:
+- A working, self-contained Python project folder
+- A `main.py` entry point to run the app
+- Clear instructions on how to run locally and install dependencies
+- An example config or `.env` file to specify stock symbol and timeframes
